@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GalopeApp v2.0 - Calculadora Ecuestre & Validaciones FEI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        equi: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            cardLight: '#334155',
+                            accent: '#38bdf8',
+                            accentHover: '#0284c7',
+                            border: '#475569',
+                            textMuted: '#94a3b8',
+                            success: '#10b981',
+                            warning: '#f59e0b',
+                            danger: '#ef4444',
+                            purple: '#a855f7'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: white; -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
+        .active-toggle { background-color: #38bdf8 !important; color: #0f172a !important; font-weight: 700; }
+        .active-mode { background-color: #a855f7 !important; color: white !important; font-weight: 700; }
+        select, input { background-color: #0f172a !important; border-color: #475569 !important; color: white !important; }
+        select:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
+        .modal-backdrop { background-color: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="p-3 md:p-6 font-sans antialiased text-slate-100">
+
+    <div class="max-w-7xl mx-auto space-y-4">
+
+        <!-- CABECERA DE LA APLICACIÓN -->
+        <header class="flex flex-col md:flex-row items-start md:items-center justify-between pb-3 border-b border-equi-border gap-3">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">🐴</span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-black text-white tracking-tight">GalopeApp</h1>
+                        <span class="text-xs font-mono bg-equi-accent/20 text-equi-accent border border-equi-accent/40 px-2 py-0.5 rounded-full font-bold">v2.0 Pro</span>
+                    </div>
+                    <p class="text-equi-textMuted text-xs">Calculadora Cinemática Ecuestre (Chile)</p>
+                </div>
+            </div>
+
+            <!-- SELECTOR DE MODO -->
+            <div class="flex items-center gap-2 bg-equi-card p-1.5 rounded-2xl border border-equi-border w-full md:w-auto justify-center">
+                <button id="btnModeRider" class="flex-1 md:flex-none px-4 py-2 rounded-xl text-xs md:text-sm active-toggle transition-all">🏇 Modo Jinete</button>
+                <button id="btnModeDesigner" class="flex-1 md:flex-none px-4 py-2 rounded-xl text-xs md:text-sm text-equi-textMuted transition-all">📐 Modo Armador de Pista</button>
+            </div>
+        </header>
+
+        <!-- BARRA RESUMEN PARÁMETROS (COMPACTA) -->
+        <div id="summaryBar" class="bg-equi-card border border-equi-accent/40 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-2 shadow-lg hidden">
+            <div class="flex flex-wrap items-center gap-3 text-xs">
+                <span id="sumHorse" class="font-bold text-equi-accent flex items-center gap-1">🐴 Caballo Estándar (3.60m)</span>
+                <span class="text-equi-border">•</span>
+                <span id="sumFooting" class="text-slate-300">🌱 Arena Sílice</span>
+                <span class="text-equi-border">•</span>
+                <span id="sumHeight" class="text-slate-300">📏 1.10m - 1.20m</span>
+                <span class="text-equi-border">•</span>
+                <span id="sumSpeed" class="text-slate-300">⏱️ 350 m/min</span>
+            </div>
+            <button id="btnEditSetup" class="text-xs bg-equi-accent/20 hover:bg-equi-accent text-equi-accent hover:text-equi-bg font-bold px-3 py-1.5 rounded-xl border border-equi-accent/30 transition-all">
+                ✏️ Modificar Parámetros
+            </button>
+        </div>
+
+        <!-- SECCIÓN DE CONFIGURACIÓN INICIAL (DESPLEGABLE / OCULTABLE) -->
+        <div id="setupSection" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <!-- 1. PERFIL CABALLO -->
+            <section class="bg-equi-card p-4 rounded-2xl border border-equi-border shadow-xl space-y-3">
+                <div class="flex items-center justify-between border-b border-equi-border pb-2">
+                    <h2 class="text-sm font-bold text-equi-accent flex items-center gap-2"><span>🐎</span> 1. Perfil del Caballo</h2>
+                    <button id="btnOpenHorseModal" class="text-xs bg-equi-accent/20 text-equi-accent hover:bg-equi-accent hover:text-equi-bg px-2.5 py-1 rounded-lg border border-equi-accent/30 font-semibold transition-colors">+ Cuadra</button>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-equi-textMuted mb-1">Seleccionar Caballo Guardado</label>
+                    <select id="horseSelect" class="w-full p-2 rounded-xl border text-xs font-semibold">
+                        <option value="default">Caballo Estándar (Batida Base 3.60m)</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 bg-equi-bg p-2.5 rounded-xl border border-equi-border">
+                    <div>
+                        <span class="block text-[10px] uppercase text-equi-textMuted">Batida Base</span>
+                        <span id="lblHorseStride" class="text-base font-bold text-white">3.60 m</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] uppercase text-equi-textMuted">Temperamento</span>
+                        <span id="lblHorseTemp" class="text-xs font-bold text-equi-warning">Normal</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. SUELO Y PARÁMETROS PRUEBA -->
+            <section class="bg-equi-card p-4 rounded-2xl border border-equi-border shadow-xl space-y-3">
+                <h2 class="text-sm font-bold text-equi-accent border-b border-equi-border pb-2 flex items-center gap-2"><span>⚙️</span> 2. Suelo y Parámetros FEI</h2>
+                
+                <div>
+                    <label class="block text-xs font-medium text-equi-textMuted mb-1">🌱 Superficie de Pista</label>
+                    <select id="footingType" class="w-full p-2 rounded-xl border text-xs">
+                        <option value="silica" selected>Arena Sílice / Geotextil (Óptima 100%)</option>
+                        <option value="heavy_sand">Arena Pesada (-0.08m acorta batida)</option>
+                        <option value="hard_sand">Arena Dura (+0.05m galope fluido)</option>
+                        <option value="grass_dry">Césped Seco (Normal)</option>
+                        <option value="grass_wet">Césped Húmedo (-0.05m precaución)</option>
+                        <option value="mud">Barro / Pesada (-0.12m pérdida batida)</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-equi-textMuted mb-1">Altura Saltos</label>
+                        <select id="height" class="w-full p-2 rounded-xl border text-xs">
+                            <option value="1.00">0.90m - 1.00m</option>
+                            <option value="1.15" selected>1.10m - 1.20m</option>
+                            <option value="1.30">1.30m - 1.35m</option>
+                            <option value="1.45">1.40m - 1.50m (GP)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-equi-textMuted mb-1">Velocidad FEI</label>
+                        <select id="speed" class="w-full p-2 rounded-xl border text-xs">
+                            <option value="300">300 m/min</option>
+                            <option value="325">325 m/min</option>
+                            <option value="350" selected>350 m/min</option>
+                            <option value="375">375 m/min</option>
+                            <option value="400">400 m/min</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="btnConfirmSetup" class="w-full bg-equi-accent hover:bg-equi-accentHover text-equi-bg p-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all mt-1">
+                    ✓ Fijar Parámetros y Trabajar en Pista
+                </button>
+            </section>
+        </div>
+
+        <!-- CONTENEDOR OPERATIVO PRINCIPAL (RECONOCIMIENTO & RESULTADOS) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- COLUMNA 1: FORMULARIO DE SALTOS Y DISTANCIAS -->
+            <div class="space-y-6 lg:col-span-1">
+                <section class="bg-equi-card p-5 rounded-2xl border border-equi-border shadow-xl">
+                    <h2 id="sec3Title" class="text-base font-bold text-equi-accent mb-3 border-b border-equi-border pb-2 flex items-center gap-2">
+                        <span>📏</span> Reconocimiento de Línea
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-equi-textMuted mb-1">Nombre o Número de Elemento</label>
+                            <input type="text" id="lineLabel" placeholder="Ej: Línea 3 a 4, Triple A-B-C" class="w-full p-2.5 rounded-xl border text-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-equi-textMuted mb-1">Estructura del Elemento</label>
+                            <select id="elemComboType" class="w-full p-2.5 rounded-xl border text-sm font-bold text-equi-accent">
+                                <option value="single_double" selected>Línea Abierta / Doble (2 Saltos: A ➔ B)</option>
+                                <option value="triple">Combinación Triple (3 Saltos: A ➔ B ➔ C)</option>
+                            </select>
+                        </div>
+
+                        <!-- CONTROLES MODO JINETE -->
+                        <div id="containerRiderInput" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-equi-textMuted mb-1.5">Método de Medición</label>
+                                <div class="grid grid-cols-2 gap-2 p-1 bg-equi-bg rounded-xl border border-equi-border">
+                                    <button id="btnMeters" class="p-2.5 rounded-lg text-xs font-bold active-toggle">Metros (m)</button>
+                                    <button id="btnSteps" class="p-2.5 rounded-lg text-xs font-bold text-equi-textMuted">Pasos Caminados</button>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-equi-bg/60 rounded-xl border border-equi-border/70 space-y-2">
+                                <span class="text-[11px] font-bold text-equi-accent uppercase tracking-wider block">Tramo 1 (A ➔ B)</span>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div id="groupMeters">
+                                        <label class="block text-[10px] text-equi-textMuted mb-1">Distancia A-B (m)</label>
+                                        <input type="number" id="distMeters" value="22.00" step="0.10" class="w-full p-2 rounded-xl border text-base font-bold text-equi-accent">
+                                    </div>
+                                    <div id="groupSteps" class="hidden">
+                                        <label class="block text-[10px] text-equi-textMuted mb-1">Pasos A-B</label>
+                                        <input type="number" id="distSteps" value="24.4" step="0.1" class="w-full p-2 rounded-xl border text-base font-bold text-equi-accent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] text-equi-textMuted mb-1">Trazado / Curva</label>
+                                        <select id="trajectory" class="w-full p-2 rounded-xl border text-xs">
+                                            <option value="straight" selected>Línea Recta</option>
+                                            <option value="curved_outer">Curva Abierta (+0.5m)</option>
+                                            <option value="curved_inner">Curva Cortada (-0.5m)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="containerTripleRider" class="p-3 bg-equi-bg/60 rounded-xl border border-equi-purple/50 space-y-2 hidden">
+                                <span class="text-[11px] font-bold text-equi-purple uppercase tracking-wider block">Tramo 2 (B ➔ C - Máx 2 Batidas)</span>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div id="groupMetersBC">
+                                        <label class="block text-[10px] text-equi-textMuted mb-1">Distancia B-C (m)</label>
+                                        <input type="number" id="distMetersBC" value="10.80" step="0.10" class="w-full p-2 rounded-xl border text-base font-bold text-equi-purple">
+                                    </div>
+                                    <div id="groupStepsBC" class="hidden">
+                                        <label class="block text-[10px] text-equi-textMuted mb-1">Pasos B-C</label>
+                                        <input type="number" id="distStepsBC" value="12.0" step="0.1" class="w-full p-2 rounded-xl border text-base font-bold text-equi-purple">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CONTROLES MODO ARMADOR -->
+                        <div id="containerDesignerInput" class="space-y-3 hidden">
+                            <div class="p-3 bg-equi-bg/60 rounded-xl border border-equi-border/70 space-y-2">
+                                <span class="text-[11px] font-bold text-equi-purple uppercase tracking-wider block">Diseño Tramo A ➔ B</span>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[10px] text-equi-textMuted mb-1">Batidas A-B</label>
+                                        <select id="designerTargetStrides" class="w-full p-2 rounded-xl border text-xs font-bold text-equi-purple">
+                                            <option value="1">1 Batida (Doble)</option>
+                                            <option value="2">2 Batidas (Doble)</option>
+                                            <option value="3">3 Batidas</option>
+                                            <option value="4">4 Batidas</option>
+                                            <option value="5" selected>5 Batidas</option>
+                                            <option value="6">6 Batidas</option>
+                                            <option value="7">7 Batidas</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] text-equi-textMuted mb-1">Intención A-B</label>
+                                        <select id="designerIntent" class="w-full p-2 rounded-xl border text-xs font-semibold">
+                                            <option value="normal" selected>Normal (0 cm)</option>
+                                            <option value="tight">Apretada (-12 cm)</option>
+                                            <option value="open">Abierta (+12 cm)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="containerTripleDesigner" class="p-3 bg-equi-bg/60 rounded-xl border border-equi-purple/50 space-y-2 hidden">
+                                <span class="text-[11px] font-bold text-equi-purple uppercase tracking-wider block">Diseño Tramo B ➔ C (Máx 2 Batidas)</span>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[10px] text-equi-textMuted mb-1">Batidas B-C</label>
+                                        <select id="designerTargetStridesBC" class="w-full p-2 rounded-xl border text-xs font-bold text-equi-purple">
+                                            <option value="1" selected>1 Batida</option>
+                                            <option value="2">2 Batidas</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] text-equi-textMuted mb-1">Intención B-C</label>
+                                        <select id="designerIntentBC" class="w-full p-2 rounded-xl border text-xs font-semibold">
+                                            <option value="normal" selected>Normal (0 cm)</option>
+                                            <option value="tight">Apretada (-12 cm)</option>
+                                            <option value="open">Abierta (+12 cm)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SELECCIÓN DE OBSTÁCULOS -->
+                        <div class="grid grid-cols-2 gap-3" id="containerJumpsAB">
+                            <div>
+                                <label class="block text-xs font-medium text-equi-textMuted mb-1">Obstáculo A (Entrada)</label>
+                                <select id="jump1" class="w-full p-2.5 rounded-xl border text-xs">
+                                    <option value="vertical">Vertical</option>
+                                    <option value="oxer" selected>Fondo (Oxer)</option>
+                                    <option value="triple">Triplebarra</option>
+                                    <option value="foso">Foso de Agua</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-equi-textMuted mb-1">Obstáculo B (Medio / Salida)</label>
+                                <select id="jump2" class="w-full p-2.5 rounded-xl border text-xs">
+                                    <option value="vertical" selected>Vertical</option>
+                                    <option value="oxer">Fondo (Oxer)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="containerJumpC" class="hidden">
+                            <label class="block text-xs font-medium text-equi-textMuted mb-1">Obstáculo C (Salida Triple)</label>
+                            <select id="jump3" class="w-full p-2.5 rounded-xl border text-xs">
+                                <option value="vertical">Vertical</option>
+                                <option value="oxer" selected>Fondo (Oxer)</option>
+                            </select>
+                        </div>
+
+                        <button id="btnCalculate" class="w-full bg-equi-accent hover:bg-equi-accentHover text-equi-bg p-3.5 rounded-xl font-extrabold text-base transition-all shadow-lg shadow-equi-accent/20 flex items-center justify-center gap-2">
+                            <span>⚡</span> <span id="lblBtnCalculate">Calcular & Diagnosticar Línea</span>
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- COLUMNA 2: RESULTADOS Y BITÁCORA -->
+            <div class="space-y-6 lg:col-span-2">
+                <section id="resultsCard" class="bg-equi-card p-5 rounded-2xl border border-equi-border shadow-xl">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-4 border-b border-equi-border pb-2">
+                        <h2 id="resHeaderTitle" class="text-base font-bold text-equi-accent flex items-center gap-2">
+                            <span>📊</span> Diagnóstico Cinemático
+                        </h2>
+                        <span id="resStridesBadge" class="bg-equi-accent text-equi-bg px-4 py-1 rounded-full font-black text-sm uppercase">5 BATIDAS</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div class="bg-equi-bg p-3.5 rounded-xl border border-equi-border text-center">
+                            <span id="lblResMetersHeader" class="text-[11px] text-equi-textMuted block">Distancia Total</span>
+                            <span id="resMeters" class="text-lg font-bold text-white">22.00 m</span>
+                        </div>
+                        <div class="bg-equi-bg p-3.5 rounded-xl border border-equi-border text-center">
+                            <span class="text-[11px] text-equi-textMuted block">Espacio Útil Galope</span>
+                            <span id="resUsefulMeters" class="text-xl font-bold text-white">17.60 m</span>
+                        </div>
+                        <div class="bg-equi-bg p-3.5 rounded-xl border border-equi-border text-center">
+                            <span class="text-[11px] text-equi-textMuted block">Pasos Jinete (~0.9m)</span>
+                            <span id="resSteps" class="text-xl font-bold text-white">24.4</span>
+                        </div>
+                        <div class="bg-equi-bg p-3.5 rounded-xl border border-equi-border text-center">
+                            <span class="text-[11px] text-equi-textMuted block">Ajuste por Batida</span>
+                            <span id="resDiff" class="text-lg font-bold text-equi-warning">-12 cm/batida</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-equi-bg p-4 rounded-xl border border-equi-border space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span id="resStatusBadge" class="bg-equi-warning text-equi-bg px-3 py-1 rounded-full font-bold text-xs">APRETADA / CORTA</span>
+                        </div>
+                        <div>
+                            <h3 id="resAdviceTitle" class="font-bold text-white text-sm mb-1">📌 Instrucciones de Monta:</h3>
+                            <p id="resAdvice" class="text-equi-textMuted text-xs md:text-sm leading-relaxed whitespace-pre-line"></p>
+                        </div>
+                    </div>
+
+                    <button id="btnSaveToLog" class="w-full bg-equi-success hover:bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-base mt-4 transition-all shadow-lg shadow-equi-success/20 flex items-center justify-center gap-2">
+                        <span>📌</span> Guardar en la Bitácora del Recorrido
+                    </button>
+                </section>
+
+                <section class="bg-equi-card p-5 rounded-2xl border border-equi-border shadow-xl">
+                    <div class="flex items-center justify-between mb-3 border-b border-equi-border pb-2">
+                        <h2 class="text-base font-bold text-equi-accent flex items-center gap-2"><span>📋</span> Bitácora del Recorrido</h2>
+                        <div class="flex items-center gap-3">
+                            <button id="btnExportLog" class="text-xs text-equi-accent hover:underline flex items-center gap-1">💾 JSON</button>
+                            <button id="btnResetLog" class="text-xs text-equi-danger hover:underline flex items-center gap-1">🗑️ Reiniciar</button>
+                        </div>
+                    </div>
+                    
+                    <div id="logList" class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                        <div id="logEmpty" class="text-center py-8 border-2 border-dashed border-equi-border rounded-xl">
+                            <p class="text-equi-textMuted text-xs">No has guardado líneas en esta sesión.</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <footer class="text-center py-6 border-t border-equi-border mt-8 text-equi-textMuted text-xs">
+            GalopeApp v2.0 Pro • Edición Chile • © 2026
+        </footer>
+
+    </div>
+
+    <!-- MODAL GESTIÓN CABALLOS -->
+    <div id="horseModal" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-equi-card w-full max-w-lg rounded-2xl border border-equi-border p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-equi-border pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">🐴 Gestor de Cuadra</h3>
+                <button id="btnCloseHorseModal" class="text-equi-textMuted hover:text-white text-xl font-bold">&times;</button>
+            </div>
+
+            <form id="horseForm" class="space-y-3 bg-equi-bg p-4 rounded-xl border border-equi-border">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-equi-textMuted mb-1">Nombre</label>
+                        <input type="text" id="modalHorseName" required class="w-full p-2 rounded-lg border text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-equi-textMuted mb-1">Batida Base (m)</label>
+                        <input type="number" id="modalHorseStride" value="3.60" step="0.05" min="3.00" max="4.20" required class="w-full p-2 rounded-lg border text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-equi-textMuted mb-1">Temperamento</label>
+                        <select id="modalHorseTemp" class="w-full p-2 rounded-lg border text-xs">
+                            <option value="Calmo">Calmo</option>
+                            <option value="Normal" selected>Normal</option>
+                            <option value="Impulsivo">Impulsivo</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-equi-accent text-equi-bg font-bold p-2.5 rounded-lg text-xs">💾 Guardar Caballo</button>
+            </form>
+
+            <div id="modalHorseList" class="space-y-2 max-h-48 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        let appMode = 'rider';
+        let inputMode = 'meters';
+        let currentResults = null;
+        let courseLog = [];
+        let horses = [];
+        let selectedHorseId = 'default';
+
+        const FOOTING_MODIFIERS = {
+            'silica': { strideDelta: 0, desc: 'Arena Sílice' },
+            'heavy_sand': { strideDelta: -0.08, desc: 'Arena Pesada' },
+            'hard_sand': { strideDelta: 0.05, desc: 'Arena Dura' },
+            'grass_dry': { strideDelta: 0.02, desc: 'Césped Seco' },
+            'grass_wet': { strideDelta: -0.05, desc: 'Césped Húmedo' },
+            'mud': { strideDelta: -0.12, desc: 'Barro' }
+        };
+
+        const TEMPERAMENT_MODIFIERS = {
+            'Calmo': { delta: -0.05, advice: '\n• 🐴 Caballo calmo: Mantén la pierna puesta para no perder impulso.' },
+            'Normal': { delta: 0.00, advice: '' },
+            'Impulsivo': { delta: 0.05, advice: '\n• 🔥 Caballo caliente: Regula con la mano desde la recepción.' }
+        };
+
+        const dom = {
+            btnModeRider: document.getElementById('btnModeRider'),
+            btnModeDesigner: document.getElementById('btnModeDesigner'),
+            summaryBar: document.getElementById('summaryBar'),
+            setupSection: document.getElementById('setupSection'),
+            btnConfirmSetup: document.getElementById('btnConfirmSetup'),
+            btnEditSetup: document.getElementById('btnEditSetup'),
+            sumHorse: document.getElementById('sumHorse'),
+            sumFooting: document.getElementById('sumFooting'),
+            sumHeight: document.getElementById('sumHeight'),
+            sumSpeed: document.getElementById('sumSpeed'),
+            horseSelect: document.getElementById('horseSelect'),
+            lblHorseStride: document.getElementById('lblHorseStride'),
+            lblHorseTemp: document.getElementById('lblHorseTemp'),
+            btnOpenHorseModal: document.getElementById('btnOpenHorseModal'),
+            btnCloseHorseModal: document.getElementById('btnCloseHorseModal'),
+            horseModal: document.getElementById('horseModal'),
+            horseForm: document.getElementById('horseForm'),
+            modalHorseName: document.getElementById('modalHorseName'),
+            modalHorseStride: document.getElementById('modalHorseStride'),
+            modalHorseTemp: document.getElementById('modalHorseTemp'),
+            modalHorseList: document.getElementById('modalHorseList'),
+            footingType: document.getElementById('footingType'),
+            height: document.getElementById('height'),
+            speed: document.getElementById('speed'),
+            sec3Title: document.getElementById('sec3Title'),
+            lineLabel: document.getElementById('lineLabel'),
+            elemComboType: document.getElementById('elemComboType'),
+            containerRiderInput: document.getElementById('containerRiderInput'),
+            containerTripleRider: document.getElementById('containerTripleRider'),
+            containerDesignerInput: document.getElementById('containerDesignerInput'),
+            containerTripleDesigner: document.getElementById('containerTripleDesigner'),
+            btnMeters: document.getElementById('btnMeters'),
+            btnSteps: document.getElementById('btnSteps'),
+            groupMeters: document.getElementById('groupMeters'),
+            groupSteps: document.getElementById('groupSteps'),
+            groupMetersBC: document.getElementById('groupMetersBC'),
+            groupStepsBC: document.getElementById('groupStepsBC'),
+            distMeters: document.getElementById('distMeters'),
+            distSteps: document.getElementById('distSteps'),
+            distMetersBC: document.getElementById('distMetersBC'),
+            distStepsBC: document.getElementById('distStepsBC'),
+            trajectory: document.getElementById('trajectory'),
+            designerTargetStrides: document.getElementById('designerTargetStrides'),
+            designerIntent: document.getElementById('designerIntent'),
+            designerTargetStridesBC: document.getElementById('designerTargetStridesBC'),
+            designerIntentBC: document.getElementById('designerIntentBC'),
+            jump1: document.getElementById('jump1'),
+            jump2: document.getElementById('jump2'),
+            jump3: document.getElementById('jump3'),
+            containerJumpC: document.getElementById('containerJumpC'),
+            btnCalculate: document.getElementById('btnCalculate'),
+            lblBtnCalculate: document.getElementById('lblBtnCalculate'),
+            resultsCard: document.getElementById('resultsCard'),
+            resHeaderTitle: document.getElementById('resHeaderTitle'),
+            resStridesBadge: document.getElementById('resStridesBadge'),
+            lblResMetersHeader: document.getElementById('lblResMetersHeader'),
+            resMeters: document.getElementById('resMeters'),
+            resUsefulMeters: document.getElementById('resUsefulMeters'),
+            resSteps: document.getElementById('resSteps'),
+            resDiff: document.getElementById('resDiff'),
+            resStatusBadge: document.getElementById('resStatusBadge'),
+            resAdviceTitle: document.getElementById('resAdviceTitle'),
+            resAdvice: document.getElementById('resAdvice'),
+            btnSaveToLog: document.getElementById('btnSaveToLog'),
+            logList: document.getElementById('logList'),
+            logEmpty: document.getElementById('logEmpty'),
+            btnResetLog: document.getElementById('btnResetLog'),
+            btnExportLog: document.getElementById('btnExportLog')
+        };
+
+        function init() {
+            loadLocalStorage();
+            setupEventListeners();
+            updateHorseUI();
+            renderHorseModalList();
+            renderLog();
+            updateSummaryText();
+            calculateTactics();
+        }
+
+        function loadLocalStorage() {
+            try {
+                const savedHorses = localStorage.getItem('galope_v17_horses');
+                if (savedHorses) horses = JSON.parse(savedHorses);
+                const savedLog = localStorage.getItem('galope_v17_log');
+                if (savedLog) courseLog = JSON.parse(savedLog);
+            } catch(e) {}
+        }
+
+        function saveHorsesToStorage() { localStorage.setItem('galope_v17_horses', JSON.stringify(horses)); }
+        function saveLogToStorage() { localStorage.setItem('galope_v17_log', JSON.stringify(courseLog)); }
+
+        function updateSummaryText() {
+            const h = getActiveHorse();
+            const f = FOOTING_MODIFIERS[dom.footingType.value] || FOOTING_MODIFIERS['silica'];
+            const heightTxt = dom.height.options[dom.height.selectedIndex].text;
+            
+            dom.sumHorse.textContent = `🐴 ${h.name} (${h.stride.toFixed(2)}m)`;
+            dom.sumFooting.textContent = `🌱 ${f.desc}`;
+            dom.sumHeight.textContent = `📏 ${heightTxt}`;
+            dom.sumSpeed.textContent = `⏱️ ${dom.speed.value} m/min`;
+        }
+
+        function collapseSetup() {
+            updateSummaryText();
+            dom.setupSection.classList.add('hidden');
+            dom.summaryBar.classList.remove('hidden');
+        }
+
+        function expandSetup() {
+            dom.setupSection.classList.remove('hidden');
+            dom.summaryBar.classList.add('hidden');
+        }
+
+        function setupEventListeners() {
+            dom.btnModeRider.addEventListener('click', () => setAppMode('rider'));
+            dom.btnModeDesigner.addEventListener('click', () => setAppMode('designer'));
+            dom.btnMeters.addEventListener('click', () => setInputMode('meters'));
+            dom.btnSteps.addEventListener('click', () => setInputMode('steps'));
+
+            dom.btnConfirmSetup.addEventListener('click', collapseSetup);
+            dom.btnEditSetup.addEventListener('click', expandSetup);
+
+            dom.elemComboType.addEventListener('change', (e) => {
+                const isTriple = e.target.value === 'triple';
+                if (isTriple) {
+                    dom.containerTripleRider.classList.remove('hidden');
+                    dom.containerTripleDesigner.classList.remove('hidden');
+                    dom.containerJumpC.classList.remove('hidden');
+
+                    dom.designerTargetStrides.innerHTML = `
+                        <option value="1">1 Batida</option>
+                        <option value="2" selected>2 Batidas</option>
+                    `;
+                    dom.trajectory.value = 'straight';
+                    dom.trajectory.disabled = true;
+                } else {
+                    dom.containerTripleRider.classList.add('hidden');
+                    dom.containerTripleDesigner.classList.add('hidden');
+                    dom.containerJumpC.classList.add('hidden');
+
+                    dom.designerTargetStrides.innerHTML = `
+                        <option value="1">1 Batida (Doble)</option>
+                        <option value="2">2 Batidas (Doble)</option>
+                        <option value="3">3 Batidas</option>
+                        <option value="4">4 Batidas</option>
+                        <option value="5" selected>5 Batidas</option>
+                        <option value="6">6 Batidas</option>
+                        <option value="7">7 Batidas</option>
+                    `;
+                    dom.trajectory.disabled = false;
+                }
+                calculateTactics();
+            });
+
+            dom.btnOpenHorseModal.addEventListener('click', () => dom.horseModal.classList.remove('hidden'));
+            dom.btnCloseHorseModal.addEventListener('click', () => dom.horseModal.classList.add('hidden'));
+
+            dom.horseForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newHorse = {
+                    id: 'horse_' + Date.now(),
+                    name: dom.modalHorseName.value.trim(),
+                    stride: parseFloat(dom.modalHorseStride.value),
+                    temp: dom.modalHorseTemp.value
+                };
+                horses.push(newHorse);
+                saveHorsesToStorage();
+                updateHorseSelectOptions();
+                selectedHorseId = newHorse.id;
+                dom.horseSelect.value = newHorse.id;
+                updateHorseUI();
+                renderHorseModalList();
+                dom.modalHorseName.value = '';
+                dom.horseModal.classList.add('hidden');
+            });
+
+            dom.horseSelect.addEventListener('change', (e) => {
+                selectedHorseId = e.target.value;
+                updateHorseUI();
+                calculateTactics();
+            });
+
+            dom.btnCalculate.addEventListener('click', calculateTactics);
+            dom.distMeters.addEventListener('input', syncStepsFromMeters);
+            dom.distSteps.addEventListener('input', syncMetersFromSteps);
+            dom.distMetersBC.addEventListener('input', syncStepsFromMetersBC);
+            dom.distStepsBC.addEventListener('input', syncMetersFromStepsBC);
+
+            dom.footingType.addEventListener('change', calculateTactics);
+            dom.height.addEventListener('change', calculateTactics);
+            dom.speed.addEventListener('change', calculateTactics);
+            dom.designerTargetStrides.addEventListener('change', calculateTactics);
+            dom.designerIntent.addEventListener('change', calculateTactics);
+            dom.designerTargetStridesBC.addEventListener('change', calculateTactics);
+            dom.designerIntentBC.addEventListener('change', calculateTactics);
+            dom.jump1.addEventListener('change', calculateTactics);
+            dom.jump2.addEventListener('change', calculateTactics);
+            dom.jump3.addEventListener('change', calculateTactics);
+
+            dom.btnSaveToLog.addEventListener('click', saveCurrentLineToLog);
+            dom.btnResetLog.addEventListener('click', () => {
+                courseLog = [];
+                saveLogToStorage();
+                renderLog();
+            });
+            dom.btnExportLog.addEventListener('click', exportLogAsJSON);
+        }
+
+        function setAppMode(mode) {
+            appMode = mode;
+            if (mode === 'rider') {
+                dom.btnModeRider.className = 'flex-1 md:flex-none px-4 py-2 rounded-xl text-xs md:text-sm active-toggle transition-all';
+                dom.btnModeDesigner.className = 'flex-1 md:flex-none px-4 py-2 rounded-xl text-xs md:text-sm text-equi-textMuted transition-all';
+                dom.sec3Title.innerHTML = '<span>📏</span> Reconocimiento (Jinete)';
+                dom.containerRiderInput.classList.remove('hidden');
+                dom.containerDesignerInput.classList.add('hidden');
+                dom.lblBtnCalculate.textContent = 'Calcular & Diagnosticar Línea';
+                dom.resHeaderTitle.innerHTML = '<span>📊</span> Diagnóstico Cinemático';
+            } else {
+                dom.btnModeDesigner.className = 'flex-1 md:flex-none px-4 py-2 rounded-xl text-xs md:text-sm active-mode transition-all';
+                dom.btnModeRider.className = 'flex-1 md:flex-none px-4 py-2 rounded-xl text-xs md:text-sm text-equi-textMuted transition-all';
+                dom.sec3Title.innerHTML = '<span>📐</span> Diseño de Pista (Armador)';
+                dom.containerRiderInput.classList.add('hidden');
+                dom.containerDesignerInput.classList.remove('hidden');
+                dom.lblBtnCalculate.textContent = 'Calcular Distancia de Armado';
+                dom.resHeaderTitle.innerHTML = '<span>📐</span> Planos de Armado';
+            }
+            calculateTactics();
+        }
+
+        function setInputMode(mode) {
+            inputMode = mode;
+            if (mode === 'meters') {
+                dom.btnMeters.className = 'p-2.5 rounded-lg text-xs font-bold active-toggle';
+                dom.btnSteps.className = 'p-2.5 rounded-lg text-xs font-bold text-equi-textMuted';
+                dom.groupMeters.classList.remove('hidden');
+                dom.groupSteps.classList.add('hidden');
+                dom.groupMetersBC.classList.remove('hidden');
+                dom.groupStepsBC.classList.add('hidden');
+            } else {
+                dom.btnSteps.className = 'p-2.5 rounded-lg text-xs font-bold active-toggle';
+                dom.btnMeters.className = 'p-2.5 rounded-lg text-xs font-bold text-equi-textMuted';
+                dom.groupSteps.classList.remove('hidden');
+                dom.groupMeters.classList.add('hidden');
+                dom.groupStepsBC.classList.remove('hidden');
+                dom.groupMetersBC.classList.add('hidden');
+            }
+        }
+
+        function syncStepsFromMeters() { dom.distSteps.value = ((parseFloat(dom.distMeters.value)||0) / 0.90).toFixed(1); }
+        function syncMetersFromSteps() { dom.distMeters.value = ((parseFloat(dom.distSteps.value)||0) * 0.90).toFixed(2); }
+        function syncStepsFromMetersBC() { dom.distStepsBC.value = ((parseFloat(dom.distMetersBC.value)||0) / 0.90).toFixed(1); }
+        function syncMetersFromStepsBC() { dom.distMetersBC.value = ((parseFloat(dom.distStepsBC.value)||0) * 0.90).toFixed(2); }
+
+        function getActiveHorse() {
+            if (selectedHorseId === 'default') return { name: 'Caballo Estándar', stride: 3.60, temp: 'Normal' };
+            return horses.find(h => h.id === selectedHorseId) || { name: 'Caballo Estándar', stride: 3.60, temp: 'Normal' };
+        }
+
+        function updateHorseSelectOptions() {
+            dom.horseSelect.innerHTML = '<option value="default">Caballo Estándar (Batida Base 3.60m)</option>';
+            horses.forEach(h => {
+                const opt = document.createElement('option');
+                opt.value = h.id;
+                opt.textContent = `${h.name} (${h.stride.toFixed(2)}m - ${h.temp})`;
+                dom.horseSelect.appendChild(opt);
+            });
+        }
+
+        function updateHorseUI() {
+            updateHorseSelectOptions();
+            dom.horseSelect.value = selectedHorseId;
+            const h = getActiveHorse();
+            dom.lblHorseStride.textContent = `${h.stride.toFixed(2)} m`;
+            dom.lblHorseTemp.textContent = h.temp;
+            updateSummaryText();
+        }
+
+        function renderHorseModalList() {
+            if (horses.length === 0) {
+                dom.modalHorseList.innerHTML = '<p class="text-xs text-equi-textMuted italic p-2">No hay caballos registrados.</p>';
+                return;
+            }
+            dom.modalHorseList.innerHTML = '';
+            horses.forEach(h => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-equi-bg p-2.5 rounded-lg border border-equi-border text-xs';
+                div.innerHTML = `
+                    <div>
+                        <span class="font-bold text-white">${h.name}</span>
+                        <span class="text-equi-textMuted text-[10px] ml-2">(${h.stride.toFixed(2)}m • ${h.temp})</span>
+                    </div>
+                    <button class="text-equi-danger hover:underline text-xs font-bold" onclick="deleteHorse('${h.id}')">Eliminar</button>
+                `;
+                dom.modalHorseList.appendChild(div);
+            });
+        }
+
+        window.deleteHorse = function(id) {
+            horses = horses.filter(h => h.id !== id);
+            if (selectedHorseId === id) selectedHorseId = 'default';
+            saveHorsesToStorage();
+            updateHorseUI();
+            renderHorseModalList();
+            calculateTactics();
+        };
+
+        function validateSafetyLimits(dist, strides) {
+            if (strides === 1) {
+                if (dist < 7.20) return '⚠️ RIESGO GRAVE: < 7.20m (Incompatible con 1 batida - Peligro de choque).';
+                if (dist > 8.40) return '⚠️ DISTANCIA EXCESIVA: > 8.40m es demasiado abierta para 1 batida.';
+            } else if (strides === 2) {
+                if (dist < 10.20) return '⚠️ RIESGO: < 10.20m (Demasiado apretada para 2 batidas).';
+                if (dist > 11.80) return '⚠️ DISTANCIA EXCESIVA: > 11.80m excede el límite de 2 batidas.';
+            }
+            return null;
+        }
+
+        function calculateTactics() {
+            updateSummaryText();
+            const horse = getActiveHorse();
+            const footing = FOOTING_MODIFIERS[dom.footingType.value] || FOOTING_MODIFIERS['silica'];
+            const jumpHeight = parseFloat(dom.height.value);
+            const speed = parseInt(dom.speed.value);
+            const isTriple = dom.elemComboType.value === 'triple';
+
+            const jump1Type = dom.jump1.value;
+            const jump2Type = dom.jump2.value;
+            const jump3Type = dom.jump3.value;
+
+            let landingA = 1.80, takeoffB = 1.80;
+            if (jumpHeight >= 1.40) { landingA = 2.35; takeoffB = 2.30; }
+            else if (jumpHeight >= 1.30) { landingA = 2.10; takeoffB = 2.10; }
+            else if (jumpHeight <= 1.00) { landingA = 1.60; takeoffB = 1.60; }
+
+            if (jump1Type === 'oxer') landingA += 0.20;
+            if (jump1Type === 'triple') landingA += 0.30;
+            if (jump1Type === 'foso') landingA += 0.50;
+            if (jump2Type === 'oxer') takeoffB += 0.20;
+
+            const tempMod = TEMPERAMENT_MODIFIERS[horse.temp] || TEMPERAMENT_MODIFIERS['Normal'];
+            const speedModifier = (speed - 350) * 0.004; 
+            const baseStrideAB = horse.stride + footing.strideDelta + speedModifier + tempMod.delta;
+
+            let totalDist = 0, usefulAB = 0, stridesAB = 0, diffAB = 0;
+            let usefulBC = 0, stridesBC = 0, diffBC = 0, distBC = 0, distAB = 0;
+            let statusTag = '', statusColor = '', riderAdvice = '', designerAdvice = '';
+
+            if (appMode === 'rider') {
+                distAB = inputMode === 'meters' ? parseFloat(dom.distMeters.value) : (parseFloat(dom.distSteps.value) * 0.90);
+                if (!isTriple && dom.trajectory.value === 'curved_outer') distAB += 0.50;
+                if (!isTriple && dom.trajectory.value === 'curved_inner') distAB -= 0.50;
+
+                usefulAB = distAB - (landingA + takeoffB);
+                stridesAB = Math.max(1, Math.round(usefulAB / baseStrideAB));
+                const reqStrideAB = usefulAB / stridesAB;
+                diffAB = Math.round((reqStrideAB - baseStrideAB) * 100);
+
+                totalDist = distAB;
+
+                if (!isTriple) {
+                    // REACTIVAR CURVAS SI ES LÍNEA ABIERTA (> 2 BATIDAS)
+                    if (stridesAB <= 2) {
+                        dom.trajectory.value = 'straight';
+                        dom.trajectory.disabled = true;
+                    } else {
+                        dom.trajectory.disabled = false;
+                    }
+
+                    const safetyWarning = validateSafetyLimits(distAB, stridesAB);
+
+                    if (safetyWarning) {
+                        statusTag = '⚠️ ALERTA SEGURIDAD';
+                        statusColor = 'bg-equi-danger';
+                        riderAdvice = `🏇 Advertencia A ➔ B (${stridesAB} Batidas):\n${safetyWarning}`;
+                    } else {
+                        statusTag = Math.abs(diffAB) <= 8 ? 'NORMAL / FLUIDA' : (diffAB < -8 ? 'APRETADA / CORTA' : 'ABIERTA / LARGA');
+                        statusColor = Math.abs(diffAB) <= 8 ? 'bg-equi-success' : (diffAB < -8 ? 'bg-equi-danger' : 'bg-equi-warning');
+                        riderAdvice = `🏇 Tramo A ➔ B (${stridesAB} Batidas):\n• Ajuste: ${diffAB >= 0 ? '+' : ''}${diffAB} cm/batida.\n` +
+                            (diffAB < -8 ? '• Retén suavemente desde la recepción, espalda atrás.' : 
+                             diffAB > 8 ? '• Acompaña con la pierna desde la primera batida.' : '• Mantén galope constante.');
+                    }
+                } else {
+                    let landingB = takeoffB;
+                    let takeoffC = jumpHeight >= 1.40 ? 2.30 : (jumpHeight >= 1.30 ? 2.10 : 1.80);
+                    if (jump3Type === 'oxer') takeoffC += 0.20;
+
+                    const baseStrideBC = baseStrideAB - 0.06;
+                    distBC = inputMode === 'meters' ? parseFloat(dom.distMetersBC.value) : (parseFloat(dom.distStepsBC.value) * 0.90);
+                    usefulBC = distBC - (landingB + takeoffC);
+                    stridesBC = Math.max(1, Math.round(usefulBC / baseStrideBC));
+                    const reqStrideBC = usefulBC / stridesBC;
+                    diffBC = Math.round((reqStrideBC - baseStrideBC) * 100);
+
+                    totalDist = distAB + distBC;
+
+                    if (stridesAB > 2 || stridesBC > 2) {
+                        statusTag = '❌ ERROR: NO ES TRIPLE';
+                        statusColor = 'bg-equi-danger';
+                        riderAdvice = `⚠️ REGLAMENTO FEI:\nUn triple solo permite 1 o 2 batidas internas por tramo.\n` +
+                            (stridesAB > 2 ? `• El tramo A-B se midió a ${stridesAB} batidas.\n` : '') +
+                            (stridesBC > 2 ? `• El tramo B-C se midió a ${stridesBC} batidas.\n` : '') +
+                            `👉 Cambia la estructura a "Línea Abierta" para analizar esta distancia.`;
+                    } else {
+                        const warnAB = validateSafetyLimits(distAB, stridesAB);
+                        const warnBC = validateSafetyLimits(distBC, stridesBC);
+
+                        if (warnAB || warnBC) {
+                            statusTag = '⚠️ RIESGO TRIPLE';
+                            statusColor = 'bg-equi-danger';
+                            riderAdvice = `🏇 Seguridad en Triple:\n` +
+                                (warnAB ? `• Tramo A-B: ${warnAB}\n` : '') +
+                                (warnBC ? `• Tramo B-C: ${warnBC}\n` : '');
+                        } else {
+                            const maxDiff = Math.max(Math.abs(diffAB), Math.abs(diffBC));
+                            statusTag = maxDiff <= 8 ? 'TRIPLE FLUIDO' : 'TRIPLE EXIGENTE';
+                            statusColor = maxDiff <= 8 ? 'bg-equi-success' : 'bg-equi-warning';
+
+                            riderAdvice = `🏇 TRIPLE A ➔ B ➔ C (${stridesAB}B + ${stridesBC}B):\n` +
+                                `• Tramo 1 (A ➔ B): ${distAB.toFixed(2)}m (${stridesAB}B) - Ajuste: ${diffAB >= 0 ? '+' : ''}${diffAB} cm/batida.\n` +
+                                `• Tramo 2 (B ➔ C): ${distBC.toFixed(2)}m (${stridesBC}B) - Ajuste: ${diffBC >= 0 ? '+' : ''}${diffBC} cm/batida.\n` +
+                                `💡 Táctica: Pierna firme sobre B para sostener la inercia hacia C.`;
+                        }
+                    }
+                }
+
+                if (tempMod.advice) riderAdvice += tempMod.advice;
+
+            } else {
+                stridesAB = parseInt(dom.designerTargetStrides.value);
+                let intentAB = dom.designerIntent.value === 'tight' ? -12 : (dom.designerIntent.value === 'open' ? 12 : 0);
+                diffAB = intentAB;
+                const targetStrideAB = baseStrideAB + (intentAB / 100);
+                usefulAB = stridesAB * targetStrideAB;
+                distAB = usefulAB + landingA + takeoffB;
+
+                if (!isTriple) {
+                    totalDist = distAB;
+                    statusTag = intentAB === 0 ? 'DISEÑO FLUIDO' : (intentAB < 0 ? 'DISEÑO APRETADO' : 'DISEÑO ABIERTO');
+                    statusColor = intentAB === 0 ? 'bg-equi-success' : 'bg-equi-warning';
+                    designerAdvice = `📐 Plano de Armado A ➔ B:\n• Colocar a ${distAB.toFixed(2)}m (${(distAB/0.9).toFixed(1)} pasos).\n• Espacio útil: ${usefulAB.toFixed(2)}m (${stridesAB} batidas a ${targetStrideAB.toFixed(2)}m).`;
+                } else {
+                    let landingB = takeoffB;
+                    let takeoffC = jumpHeight >= 1.40 ? 2.30 : (jumpHeight >= 1.30 ? 2.10 : 1.80);
+                    if (jump3Type === 'oxer') takeoffC += 0.20;
+
+                    const baseStrideBC = baseStrideAB - 0.06;
+                    stridesBC = parseInt(dom.designerTargetStridesBC.value);
+                    let intentBC = dom.designerIntentBC.value === 'tight' ? -12 : (dom.designerIntentBC.value === 'open' ? 12 : 0);
+                    diffBC = intentBC;
+                    const targetStrideBC = baseStrideBC + (intentBC / 100);
+                    usefulBC = stridesBC * targetStrideBC;
+                    distBC = usefulBC + landingB + takeoffC;
+
+                    totalDist = distAB + distBC;
+                    statusTag = 'DISEÑO TRIPLE FEI';
+                    statusColor = 'bg-equi-purple';
+
+                    designerAdvice = `📐 Plano de Armado Triple A ➔ B ➔ C:\n` +
+                        `• Tramo 1 (A ➔ B): ${distAB.toFixed(2)}m (${(distAB/0.9).toFixed(1)} pasos) - ${stridesAB} B (${intentAB >= 0 ? '+' : ''}${intentAB} cm/batida).\n` +
+                        `• Tramo 2 (B ➔ C): ${distBC.toFixed(2)}m (${(distBC/0.9).toFixed(1)} pasos) - ${stridesBC} B (${intentBC >= 0 ? '+' : ''}${intentBC} cm/batida).\n` +
+                        `• Distancia Total A ➔ C: ${totalDist.toFixed(2)}m.`;
+                }
+            }
+
+            currentResults = {
+                label: dom.lineLabel.value.trim() || (isTriple ? `Triple ${stridesAB}-${stridesBC}B` : `Línea ${stridesAB}B`),
+                distance: totalDist,
+                usefulSpace: usefulAB + usefulBC,
+                steps: (totalDist / 0.90).toFixed(1),
+                stridesCount: isTriple ? `${stridesAB}+${stridesBC}` : stridesAB,
+                isTriple: isTriple,
+                distAB: distAB,
+                distBC: distBC,
+                diffAB: diffAB,
+                diffBC: diffBC,
+                statusTag: statusTag,
+                statusColor: statusColor,
+                riderAdvice: riderAdvice,
+                designerAdvice: designerAdvice
+            };
+
+            renderResultsUI();
+        }
+
+        function renderResultsUI() {
+            if (!currentResults) return;
+
+            dom.resultsCard.classList.remove('hidden');
+            dom.resStridesBadge.textContent = `${currentResults.stridesCount} BATIDAS`;
+
+            if (currentResults.isTriple) {
+                dom.lblResMetersHeader.textContent = "Distancia A-B / B-C";
+                dom.resMeters.textContent = `${currentResults.distAB.toFixed(2)}m | ${currentResults.distBC.toFixed(2)}m`;
+                dom.resDiff.textContent = `${currentResults.diffAB >= 0 ? '+' : ''}${currentResults.diffAB} / ${currentResults.diffBC >= 0 ? '+' : ''}${currentResults.diffBC} cm/b`;
+            } else {
+                dom.lblResMetersHeader.textContent = "Distancia Total";
+                dom.resMeters.textContent = `${currentResults.distance.toFixed(2)} m`;
+                dom.resDiff.textContent = `${currentResults.diffAB >= 0 ? '+' : ''}${currentResults.diffAB} cm/batida`;
+            }
+
+            dom.resUsefulMeters.textContent = `${currentResults.usefulSpace.toFixed(2)} m`;
+            dom.resSteps.textContent = currentResults.steps;
+
+            dom.resStatusBadge.textContent = currentResults.statusTag;
+            dom.resStatusBadge.className = `${currentResults.statusColor} text-equi-bg px-3 py-1 rounded-full font-bold text-xs`;
+
+            if (appMode === 'rider') {
+                dom.resAdviceTitle.textContent = '📌 Instrucciones de Monta:';
+                dom.resAdvice.textContent = currentResults.riderAdvice.replaceAll('**', '');
+            } else {
+                dom.resAdviceTitle.textContent = '📐 Plano de Armado:';
+                dom.resAdvice.textContent = currentResults.designerAdvice.replaceAll('**', '');
+            }
+        }
+
+        function saveCurrentLineToLog() {
+            if (!currentResults) return;
+            courseLog.push({
+                id: 'log_' + Date.now(),
+                ...currentResults,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+            saveLogToStorage();
+            renderLog();
+        }
+
+        function renderLog() {
+            if (courseLog.length === 0) {
+                dom.logEmpty.classList.remove('hidden');
+                dom.logList.innerHTML = '';
+                dom.logList.appendChild(dom.logEmpty);
+                return;
+            }
+
+            dom.logEmpty.classList.add('hidden');
+            dom.logList.innerHTML = '';
+
+            courseLog.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'bg-equi-bg p-3.5 rounded-xl border border-equi-border hover:border-equi-accent transition-all cursor-pointer space-y-2';
+                
+                const subDetail = item.isTriple 
+                    ? `A-B: ${item.distAB.toFixed(2)}m (${item.diffAB >= 0 ? '+' : ''}${item.diffAB}cm) | B-C: ${item.distBC.toFixed(2)}m (${item.diffBC >= 0 ? '+' : ''}${item.diffBC}cm)`
+                    : `Distancia: ${item.distance.toFixed(2)}m • Ajuste: ${item.diffAB >= 0 ? '+' : ''}${item.diffAB} cm/batida`;
+
+                div.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-equi-cardLight text-white font-mono text-xs px-2 py-0.5 rounded-md font-bold">#${index + 1}</span>
+                            <span class="font-bold text-sm text-white">${item.label}</span>
+                        </div>
+                        <span class="${item.statusColor} text-equi-bg text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">${item.stridesCount} Batidas</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-equi-textMuted pt-1 border-t border-equi-border/50">
+                        <span class="text-white">${subDetail}</span>
+                        <span class="text-[10px] font-mono">${item.timestamp}</span>
+                    </div>
+                `;
+                dom.logList.appendChild(div);
+            });
+        }
+
+        function exportLogAsJSON() {
+            if (courseLog.length === 0) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(courseLog, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `Plan_Recorrido_GalopeApp_${Date.now()}.json`);
+            dlAnchorElem.click();
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
